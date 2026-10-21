@@ -92,6 +92,35 @@ print("\n", agent.usage)
 
 See [Agent Configuration](/agents/agent-configuration#streaming-methods) for `arun_stream()` and the detailed `stream=True` mode, and [Token usage](/agents/token-usage) for what `agent.usage` reports.
 
+## Typed stream events
+
+Pass `events=True` to `run_stream()` or `arun_stream()` to receive `StreamEvent` objects instead of bare strings. Each event carries a `kind` and the raw text fragment, so you no longer parse the `[thinking]` and `[tool call]` markers:
+
+| kind | meaning |
+|---|---|
+| `content` | model text |
+| `reasoning` | thinking / reasoning tokens |
+| `tool_call` | tool name and argument fragments |
+| `final` | one last event whose `text` is exactly what `run()` returns |
+
+Joining the `content` events reproduces the reply text. Side calls such as the tool summary stream inline as `content` events, so read the run's result from the `final` event. Without `events=True`, both methods keep the plain string stream with the markers.
+
+```python
+from swarms import Agent
+
+agent = Agent(agent_name="StoryAgent", model_name="gpt-5.4", max_loops=1)
+
+events = list(agent.run_stream("Tell me a short story about a lighthouse keeper", events=True))
+
+reasoning = "".join(e.text for e in events if e.kind == "reasoning")
+final = next(e for e in events if e.kind == "final")
+
+print(reasoning)
+print(final.text)
+```
+
+The same `events=True` argument works on `arun_stream()` in async code.
+
 ## Connect With Us
 
 If you'd like technical support, join our Discord below and stay updated on our Twitter for new updates!
